@@ -20,6 +20,7 @@ const markSchema = new mongoose.Schema({
   subject: {
     type: String,
     required: true,
+    trim: true,
   },
   ce: {
     type: Number,
@@ -36,6 +37,8 @@ const markSchema = new mongoose.Schema({
   total: {
     type: Number,
     required: true,
+    min: 0,
+    max: 100,
   },
   result: {
     type: String,
@@ -54,8 +57,8 @@ const markSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Create a compound index for studentId and subject to ensure uniqueness
-markSchema.index({ studentId: 1, subject: 1 }, { unique: true });
+// Create index for better query performance
+markSchema.index({ studentId: 1, subject: 1 });
 
 const Mark = mongoose.models.Mark || mongoose.model<IMark>('Mark', markSchema);
 export default Mark; 

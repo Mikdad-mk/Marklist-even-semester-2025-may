@@ -12,33 +12,26 @@ export interface IStudent {
 const studentSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Please provide student name'],
-    trim: true,
+    required: true,
+    trim: true
   },
   admissionNumber: {
     type: String,
-    required: [true, 'Please provide admission number'],
+    required: true,
     unique: true,
-    trim: true,
+    trim: true
   },
   class: {
     type: String,
-    required: [true, 'Please provide class'],
-    enum: ['6th', '8th', 'Plus One', 'Plus Two', 'D1', 'D2', 'D3'],
-    trim: true,
-  },
-  academicYear: {
-    type: String,
     required: true,
+    trim: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
+  displayName: {
+    type: String,
+    trim: true
+  }
+}, {
+  timestamps: true
 });
 
 // Create a compound index on admission number and class
@@ -50,5 +43,6 @@ studentSchema.pre('save', function(next) {
   next();
 });
 
-const Student = mongoose.models.Student || mongoose.model<IStudent>('Student', studentSchema);
+const Student = mongoose.models.Student || mongoose.model('Student', studentSchema);
+
 export default Student; 

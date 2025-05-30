@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { 
   Users, 
   Calendar,
-  BarChart3,
+  TrendingUp,
   Trophy,
+  ChartBar,
   Loader2
 } from 'lucide-react';
 import {
@@ -19,16 +21,26 @@ import {
 } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
 
+// Dynamically import ApexCharts with no SSR
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
+
 interface DashboardStats {
   totalStudents: number;
   totalClasses: number;
-  totalMarks: number;
+  successRate: number;
   topPerformers: Array<{
     _id: string;
     name: string;
     admissionNumber: string;
     class: string;
     averageScore: number;
+  }>;
+  classPerformance: Array<{
+    class: string;
+    averageScore: number;
+    passPercentage: number;
+    studentCount: number;
+    totalMarks: number;
   }>;
 }
 
@@ -128,20 +140,180 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-orange-100">Total Marks</p>
-                <h3 className="text-2xl font-bold mt-2">{stats?.totalMarks || 0}</h3>
+                <p className="text-sm font-medium text-blue-100">Success Rate</p>
+                <h3 className="text-2xl font-bold mt-2">{stats?.successRate || 0}%</h3>
               </div>
               <div className="p-3 bg-white/10 rounded-full">
-                <BarChart3 className="w-6 h-6" />
+                <TrendingUp className="w-6 h-6" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Class Performance Chart */}
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <ChartBar className="w-5 h-5 text-indigo-500" />
+            <CardTitle>Class Performance Overview</CardTitle>
+          </div>
+          <CardDescription>Average scores and pass rates by class</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[400px] w-full">
+            {stats?.classPerformance && (
+              <Chart
+                type="area"
+                height={400}
+                series={[
+                  {
+                    name: 'Average Score',
+                    type: 'column',
+                    data: stats.classPerformance.map(item => item.averageScore)
+                  },
+                  {
+                    name: 'Pass Rate',
+                    type: 'line',
+                    data: stats.classPerformance.map(item => item.passPercentage)
+                  }
+                ]}
+                options={{
+                  chart: {
+                    stacked: false,
+                    toolbar: {
+                      show: true,
+                      tools: {
+                        download: true,
+                        selection: false,
+                        zoom: false,
+                        zoomin: false,
+                        zoomout: false,
+                        pan: false,
+                      }
+                    },
+                    animations: {
+                      enabled: true,
+                      speed: 800,
+                      animateGradually: {
+                        enabled: true,
+                        delay: 150
+                      },
+                      dynamicAnimation: {
+                        enabled: true,
+                        speed: 350
+                      }
+                    }
+                  },
+                  colors: ['#6366f1', '#22c55e'],
+                  plotOptions: {
+                    bar: {
+                      borderRadius: 8,
+                      columnWidth: '50%',
+                      dataLabels: {
+                        position: 'top'
+                      }
+                    }
+                  },
+                  dataLabels: {
+                    enabled: true,
+                    formatter: function (val: number) {
+                      return val.toFixed(1)
+                    },
+                    offsetY: -20,
+                    style: {
+                      fontSize: '12px',
+                      colors: ["#304758"]
+                    }
+                  },
+                  stroke: {
+                    width: [0, 4],
+                    curve: 'smooth'
+                  },
+                  grid: {
+                    borderColor: '#f1f1f1',
+                    padding: {
+                      top: 0,
+                      right: 0,
+                      bottom: 0,
+                      left: 0
+                    }
+                  },
+                  markers: {
+                    size: 6,
+                    colors: ['#22c55e'],
+                    strokeColors: '#fff',
+                    strokeWidth: 2,
+                    hover: {
+                      size: 8
+                    }
+                  },
+                  xaxis: {
+                    categories: stats.classPerformance.map(item => item.class),
+                    title: {
+                      text: 'Classes',
+                      style: {
+                        fontSize: '12px',
+                        fontWeight: 600
+                      }
+                    }
+                  },
+                  yaxis: [
+                    {
+                      title: {
+                        text: "Average Score",
+                        style: {
+                          fontSize: '12px',
+                          fontWeight: 600
+                        }
+                      },
+                      min: 0,
+                      max: 100
+                    },
+                    {
+                      opposite: true,
+                      title: {
+                        text: "Pass Rate (%)",
+                        style: {
+                          fontSize: '12px',
+                          fontWeight: 600
+                        }
+                      },
+                      min: 0,
+                      max: 100
+                    }
+                  ],
+                  tooltip: {
+                    shared: true,
+                    intersect: false,
+                    theme: 'light',
+                    y: [{
+                      formatter: function(y: number) {
+                        return y.toFixed(1) + "%";
+                      }
+                    }, {
+                      formatter: function(y: number) {
+                        return y.toFixed(1) + "%";
+                      }
+                    }]
+                  },
+                  legend: {
+                    position: 'top',
+                    horizontalAlign: 'right',
+                    floating: true,
+                    offsetY: -25,
+                    offsetX: -5
+                  }
+                }}
+              />
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Top Performers */}
       <Card className="mb-8">
