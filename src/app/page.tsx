@@ -187,7 +187,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 h-[calc(100vh-280px)] overflow-y-auto lg:overflow-y-hidden">
             {/* Main Result Card */}
             <Card className="col-span-1 lg:col-span-3 bg-white/90 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 animate-fade-in-delay-1 animate-glow overflow-hidden h-full">
-              <CardHeader className="py-3 border-b border-slate-100">
+              <CardHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm py-3 border-b border-slate-100">
                 <CardTitle className="text-lg sm:text-xl text-slate-800 flex items-center gap-2">
                   <Search className="w-5 h-5 text-indigo-500" />
                   Student Result Portal
@@ -196,8 +196,8 @@ export default function HomePage() {
                   Enter your admission number to check results
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 p-4 h-[calc(100%-4rem)] overflow-auto">
-                <div className="flex flex-col sm:flex-row gap-3">
+              <CardContent className="space-y-4 p-2 sm:p-4 h-[calc(100%-4rem)] overflow-auto">
+                <div className="flex flex-col sm:flex-row gap-3 sticky top-0 z-10 bg-white/90 backdrop-blur-sm p-2 rounded-lg">
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
                     <Input
@@ -215,80 +215,82 @@ export default function HomePage() {
                     {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Searching...
+                        <span className="whitespace-nowrap">Searching...</span>
                       </>
                     ) : (
-                      'Search Results'
+                      <span className="whitespace-nowrap">Search Results</span>
                     )}
                   </Button>
                 </div>
 
                 {markEntry && (
-                  <div className="space-y-4 animate-fade-in">
+                  <div className="space-y-4 animate-fade-in px-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-gradient-to-r from-slate-50 to-indigo-50 p-4 rounded-lg">
-                      <div>
+                      <div className="text-center sm:text-left">
                         <p className="text-sm text-slate-500 mb-1">Student Name</p>
                         <p className="font-semibold text-slate-900 text-base">{markEntry.name}</p>
                       </div>
-                      <div>
+                      <div className="text-center sm:text-left">
                         <p className="text-sm text-slate-500 mb-1">Class</p>
                         <p className="font-semibold text-slate-900 text-base">{markEntry.class}</p>
                       </div>
                     </div>
 
-                    <div className="overflow-x-auto rounded-lg border border-slate-100 max-h-[calc(100vh-520px)]">
-                      <div className="min-w-[600px]">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-gradient-to-r from-slate-50 to-indigo-50">
-                              <TableHead className="font-semibold text-sm py-1.5">Subject</TableHead>
-                              <TableHead className="text-center font-semibold text-sm py-1.5">CE (30)</TableHead>
-                              <TableHead className="text-center font-semibold text-sm py-1.5">TE (70)</TableHead>
-                              <TableHead className="text-center font-semibold text-sm py-1.5">Total</TableHead>
-                              <TableHead className="text-center font-semibold text-sm py-1.5">Result</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {markEntry.subjects.map((subject, index) => {
-                              const total = subject.ce + subject.te;
-                              const result = subject.ce >= 15 && subject.te >= 28 ? 'Pass' : 'Fail';
-                              return (
-                                <TableRow key={index} className="hover:bg-slate-50/50 transition-colors">
-                                  <TableCell className="font-medium text-sm py-1.5">{subject.name}</TableCell>
-                                  <TableCell className="text-center text-sm py-1.5">
-                                    <span className={subject.ce >= 15 ? 'text-emerald-600' : 'text-red-600'}>
-                                      {subject.ce}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-center text-sm py-1.5">
-                                    <span className={subject.te >= 28 ? 'text-emerald-600' : 'text-red-600'}>
-                                      {subject.te}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-center font-semibold text-sm py-1.5">{total}</TableCell>
-                                  <TableCell className="text-center py-1.5">
-                                    <span className={`px-2 py-0.5 rounded-full text-sm font-semibold ${
-                                      result === 'Pass' 
-                                        ? 'bg-emerald-100 text-emerald-800' 
-                                        : 'bg-red-100 text-red-800'
-                                    }`}>
-                                      {result}
-                                    </span>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
+                    <div className="overflow-x-auto -mx-2 sm:mx-0">
+                      <div className="inline-block min-w-full align-middle">
+                        <div className="overflow-hidden border border-slate-100 rounded-lg shadow-sm">
+                          <table className="min-w-full divide-y divide-slate-100">
+                            <thead className="bg-gradient-to-r from-slate-50 to-indigo-50">
+                              <tr>
+                                <th scope="col" className="py-3 pl-4 pr-3 text-left text-xs font-semibold text-slate-900 sm:pl-6">Subject</th>
+                                <th scope="col" className="px-3 py-3 text-center text-xs font-semibold text-slate-900">CE (30)</th>
+                                <th scope="col" className="px-3 py-3 text-center text-xs font-semibold text-slate-900">TE (70)</th>
+                                <th scope="col" className="px-3 py-3 text-center text-xs font-semibold text-slate-900">Total</th>
+                                <th scope="col" className="px-3 py-3 text-center text-xs font-semibold text-slate-900">Result</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 bg-white">
+                              {markEntry.subjects.map((subject, index) => {
+                                const total = subject.ce + subject.te;
+                                const result = subject.ce >= 15 && subject.te >= 28 ? 'Pass' : 'Fail';
+                                return (
+                                  <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="whitespace-nowrap py-3 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">{subject.name}</td>
+                                    <td className="whitespace-nowrap px-3 py-3 text-center text-sm">
+                                      <span className={subject.ce >= 15 ? 'text-emerald-600' : 'text-red-600'}>
+                                        {subject.ce}
+                                      </span>
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-3 text-center text-sm">
+                                      <span className={subject.te >= 28 ? 'text-emerald-600' : 'text-red-600'}>
+                                        {subject.te}
+                                      </span>
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-3 text-center text-sm font-semibold">{total}</td>
+                                    <td className="whitespace-nowrap px-3 py-3 text-center">
+                                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                        result === 'Pass' 
+                                          ? 'bg-emerald-100 text-emerald-800' 
+                                          : 'bg-red-100 text-red-800'
+                                      }`}>
+                                        {result}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex justify-end">
+                    <div className="flex justify-end px-2 sm:px-0">
                       <Button
                         onClick={handleViewFullResult}
                         className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                       >
-                        View Detailed Result
+                        <span className="whitespace-nowrap">View Detailed Result</span>
                       </Button>
                     </div>
                   </div>
