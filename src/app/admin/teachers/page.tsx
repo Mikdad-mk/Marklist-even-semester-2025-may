@@ -44,6 +44,7 @@ interface Teacher {
   registerNumber: string;
   isApproved: boolean;
   canEnterMarks: boolean;
+  status: 'active' | 'inactive';
   lastMarkEntryAccess?: {
     grantedAt: string;
     reason: string;
@@ -309,6 +310,41 @@ export default function TeachersPage() {
     }
   };
 
+  const handleToggleStatus = async (teacherId: string, currentStatus: 'active' | 'inactive') => {
+    try {
+      const response = await fetch(`/api/admin/teachers/${teacherId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: currentStatus === 'active' ? 'inactive' : 'active'
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update teacher status');
+      }
+
+      const data = await response.json();
+      toast({
+        title: "Success",
+        description: data.message,
+      });
+
+      // Refresh the teachers list
+      fetchTeachers();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update teacher status",
+        variant: "destructive"
+      });
+      console.error('Error:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-full">
@@ -558,107 +594,82 @@ export default function TeachersPage() {
               <p className="text-sm text-gray-500 mt-1">Start by pre-registering teachers</p>
             </div>
           ) : (
-            <div className="rounded-lg border">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Register Number</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mark Entry</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Access</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {teachers.map((teacher) => (
-                    <tr key={teacher.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 font-medium text-gray-900">{teacher.name}</td>
-                      <td className="px-6 py-4 text-gray-500">{teacher.email}</td>
-                      <td className="px-6 py-4 text-gray-500">{teacher.registerNumber}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          teacher.isApproved 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {teacher.isApproved ? 'Approved' : 'Pending'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          teacher.canEnterMarks 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {teacher.canEnterMarks ? 'Enabled' : 'Disabled'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-500">
-                        {teacher.lastMarkEntryAccess ? (
-                          <div>
-                            <p className="text-sm">{new Date(teacher.lastMarkEntryAccess.grantedAt).toLocaleDateString()}</p>
-                            <p className="text-xs text-gray-400">{teacher.lastMarkEntryAccess.reason}</p>
-                          </div>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          {teacher.isApproved ? (
+            <div className="space-y-4">
+              {teachers.map((teacher) => (
+                <Card key={teacher.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold">{teacher.name}</h3>
+                        <p className="text-sm text-gray-500">{teacher.email}</p>
+                        <p className="text-sm text-gray-500">Register No: {teacher.registerNumber}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant={teacher.status === 'active' ? "destructive" : "default"}
+                          size="sm"
+                          onClick={() => handleToggleStatus(teacher.id, teacher.status)}
+                        >
+                          {teacher.status === 'active' ? (
                             <>
-                              <Button
-                                onClick={() => handleToggleMarkEntry(teacher)}
-                                size="sm"
-                                variant={teacher.canEnterMarks ? "destructive" : "default"}
-                              >
-                                {teacher.canEnterMarks ? (
-                                  <>
-                                    <Lock className="w-4 h-4 mr-1" />
-                                    Revoke
-                                  </>
-                                ) : (
-                                  <>
-                                    <Unlock className="w-4 h-4 mr-1" />
-                                    Grant
-                                  </>
-                                )}
-                              </Button>
-                              <Button
-                                onClick={() => handleDeleteTeacher(teacher.id)}
-                                size="sm"
-                                variant="destructive"
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              <Lock className="w-4 h-4 mr-1" />
+                              Disable Account
                             </>
                           ) : (
-                            <div className="flex items-center gap-2">
-                              <Button
-                                onClick={() => handleApproveRequest(teacher.id)}
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                onClick={() => handleRejectRequest(teacher.id)}
-                                size="sm"
-                                variant="destructive"
-                              >
-                                Reject
-                              </Button>
-                            </div>
+                            <>
+                              <Unlock className="w-4 h-4 mr-1" />
+                              Enable Account
+                            </>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </Button>
+                        <Button
+                          variant={teacher.canEnterMarks ? "destructive" : "default"}
+                          size="sm"
+                          onClick={() => handleToggleMarkEntry(teacher)}
+                          disabled={teacher.status === 'inactive'}
+                          className={!teacher.canEnterMarks ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                        >
+                          {teacher.canEnterMarks ? (
+                            <>
+                              <UserX className="w-4 h-4 mr-1" />
+                              Revoke Access
+                            </>
+                          ) : (
+                            <>
+                              <UserCheck className="w-4 h-4 mr-1" />
+                              Grant Access
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteTeacher(teacher.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    {teacher.lastMarkEntryAccess && (
+                      <div className="mt-2 text-sm text-gray-500">
+                        <Clock className="w-4 h-4 inline-block mr-1" />
+                        Last access granted: {new Date(teacher.lastMarkEntryAccess.grantedAt).toLocaleString()}
+                        {teacher.lastMarkEntryAccess.reason && (
+                          <span className="ml-2">
+                            Reason: {teacher.lastMarkEntryAccess.reason}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {teacher.status === 'inactive' && (
+                      <div className="mt-2 text-sm text-red-500 flex items-center">
+                        <Lock className="w-4 h-4 mr-1" />
+                        Account is currently disabled
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
         </CardContent>

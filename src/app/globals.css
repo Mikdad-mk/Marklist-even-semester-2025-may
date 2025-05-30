@@ -85,11 +85,44 @@
   }
 
   * {
-    /* @apply border; */
+    @apply border-gray-200 dark:border-gray-700;
   }
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Fix for transparent option tags */
+  option {
+    @apply bg-white text-gray-900 dark:bg-gray-800 dark:text-white;
+  }
+
+  /* Fix for dialog boxes and select menus */
+  [role="dialog"],
+  [role="listbox"] {
+    @apply bg-white dark:bg-gray-800 shadow-lg;
+  }
+
+  /* Fix for select dropdown background */
+  select {
+    @apply bg-white dark:bg-gray-800;
+  }
+
+  /* Fix for dialog content */
+  .dialog-content,
+  [role="dialog"] > div {
+    @apply bg-white dark:bg-gray-800;
+  }
+
+  /* Fix for select options in dropdown */
+  select option {
+    @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
+  }
+
+  /* Fix for dialog overlay */
+  [role="dialog"]::backdrop,
+  .dialog-overlay {
+    @apply bg-black/50;
   }
 }
 

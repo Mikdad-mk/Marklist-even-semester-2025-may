@@ -4,6 +4,10 @@ import dbConnect from "@/lib/dbConnect";
 import Mark, { IMark } from "@/models/Mark";
 import Student, { IStudent } from "@/models/Student";
 import { appendToSheet, MarkData } from "@/lib/googleSheets";
+import { Document } from 'mongoose';
+import User from "@/models/User";
+
+type StudentDocument = Document & IStudent;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -23,7 +27,13 @@ async function isTeacherWithMarkAccess(req: NextRequest) {
       return false;
     }
 
-    return true;
+    // Check if teacher account is active
+    const teacher = await User.findById(decoded.id);
+    if (!teacher || teacher.status === 'inactive') {
+      return false;
+    }
+
+    return decoded;
   } catch {
     return false;
   }
@@ -31,9 +41,10 @@ async function isTeacherWithMarkAccess(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    if (!await isTeacherWithMarkAccess(req)) {
+    const teacher = await isTeacherWithMarkAccess(req);
+    if (!teacher) {
       return NextResponse.json(
-        { error: "You don't have permission to enter marks at this time" },
+        { error: "You don't have permission to enter marks. Your account may be inactive or restricted." },
         { status: 403 }
       );
     }
@@ -43,9 +54,9 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
 
     // Validate required fields
-    if (!data.studentId || !data.subject || !data.ce || !data.te) {
+    if (!data.studentName || !data.admissionNumber || !data.class || !data.subject || !data.ce || !data.te) {
       return NextResponse.json(
-        { error: "Missing required fields: studentId, subject, ce, and te are required" },
+        { error: "Missing required fields: studentName, admissionNumber, class, subject, ce, and te are required" },
         { status: 400 }
       );
     }
@@ -68,18 +79,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get student details first
-    const student = await Student.findById<IStudent>(data.studentId);
+    // Find or create student
+    let student = await Student.findOne({
+      admissionNumber: data.admissionNumber.trim()
+    }).exec() as StudentDocument | null;
+
+    if (!student) {
+      // Create new student if not found
+      student = (await Student.create({
+        name: data.studentName.trim(),
+        class: data.class,
+        admissionNumber: data.admissionNumber.trim()
+      })) as StudentDocument;
+    } else {
+      // Update student name and class if they've changed
+      if (student.name !== data.studentName.trim() || student.class !== data.class) {
+        student.name = data.studentName.trim();
+        student.class = data.class;
+        await student.save();
+      }
+    }
+
+    // Ensure we have a valid student at this point
     if (!student) {
       return NextResponse.json(
-        { error: "Student not found" },
-        { status: 404 }
+        { error: "Failed to create or update student record" },
+        { status: 500 }
       );
     }
 
     // Check for duplicate entry
     const existingMark = await Mark.findOne<IMark>({
-      studentId: data.studentId,
+      studentId: student._id,
       subject: data.subject
     });
 
@@ -94,9 +125,10 @@ export async function POST(req: NextRequest) {
     const total = ce + te;
     const result = (total >= 40 ? 'Pass' : 'Fail') as 'Pass' | 'Fail';
 
-    // Create mark in MongoDB
+    // Create mark in MongoDB with teacherId
     const mark = await Mark.create<IMark>({
-      studentId: data.studentId,
+      studentId: student._id,
+      teacherId: teacher.id,
       subject: data.subject,
       ce,
       te,
@@ -125,7 +157,7 @@ export async function POST(req: NextRequest) {
       // Don't fail the request if Google Sheets sync fails
     }
 
-    return NextResponse.json(mark);
+    return NextResponse.json({ ...mark.toJSON(), studentName: student.name });
   } catch (error: any) {
     console.error('Error creating mark:', error);
 
