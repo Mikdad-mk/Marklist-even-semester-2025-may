@@ -199,29 +199,29 @@ export default function HomePage() {
               <CardContent className="space-y-4 p-2 sm:p-4">
                 <div className="sticky top-[72px] z-10 bg-white/90 backdrop-blur-sm p-2 rounded-lg">
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                      <Input
-                        placeholder="Enter your admission number"
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                    <Input
+                      placeholder="Enter your admission number"
                         className="pl-10 border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 transition-all duration-300 w-full"
-                        value={admissionNumber}
-                        onChange={(e) => setAdmissionNumber(e.target.value)}
-                      />
-                    </div>
-                    <Button 
-                      onClick={handleSearch}
-                      disabled={loading}
+                      value={admissionNumber}
+                      onChange={(e) => setAdmissionNumber(e.target.value)}
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleSearch}
+                    disabled={loading}
                       className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           <span className="whitespace-nowrap">Searching...</span>
-                        </>
-                      ) : (
+                      </>
+                    ) : (
                         <span className="whitespace-nowrap">Search Results</span>
-                      )}
-                    </Button>
+                    )}
+                  </Button>
                   </div>
                 </div>
 
@@ -253,35 +253,35 @@ export default function HomePage() {
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100 bg-white">
-                                {markEntry.subjects.map((subject, index) => {
-                                  const total = subject.ce + subject.te;
-                                  const result = subject.ce >= 15 && subject.te >= 28 ? 'Pass' : 'Fail';
-                                  return (
+                          {markEntry.subjects.map((subject, index) => {
+                            const total = subject.ce + subject.te;
+                            const result = subject.ce >= 15 && subject.te >= 28 ? 'Pass' : 'Fail';
+                            return (
                                     <tr key={index} className="hover:bg-slate-50/50 transition-colors">
                                       <td className="whitespace-nowrap py-3 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">{subject.name}</td>
                                       <td className="whitespace-nowrap px-3 py-3 text-center text-sm">
-                                        <span className={subject.ce >= 15 ? 'text-emerald-600' : 'text-red-600'}>
-                                          {subject.ce}
-                                        </span>
+                                  <span className={subject.ce >= 15 ? 'text-emerald-600' : 'text-red-600'}>
+                                    {subject.ce}
+                                  </span>
                                       </td>
                                       <td className="whitespace-nowrap px-3 py-3 text-center text-sm">
-                                        <span className={subject.te >= 28 ? 'text-emerald-600' : 'text-red-600'}>
-                                          {subject.te}
-                                        </span>
+                                  <span className={subject.te >= 28 ? 'text-emerald-600' : 'text-red-600'}>
+                                    {subject.te}
+                                  </span>
                                       </td>
                                       <td className="whitespace-nowrap px-3 py-3 text-center text-sm font-semibold">{total}</td>
                                       <td className="whitespace-nowrap px-3 py-3 text-center">
                                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                          result === 'Pass' 
-                                            ? 'bg-emerald-100 text-emerald-800' 
-                                            : 'bg-red-100 text-red-800'
-                                        }`}>
-                                          {result}
-                                        </span>
+                                    result === 'Pass' 
+                                      ? 'bg-emerald-100 text-emerald-800' 
+                                      : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {result}
+                                  </span>
                                       </td>
                                     </tr>
-                                  );
-                                })}
+                            );
+                          })}
                               </tbody>
                             </table>
                           </div>
