@@ -130,7 +130,7 @@ export default function LoginPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 ">
                         <UserCog className="w-4 h-4" />
                         Main Admin
                       </div>
@@ -198,14 +198,7 @@ export default function LoginPage() {
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <div className="text-sm">
-                  <Link
-                    href="/forgot-password"
-                    className="font-medium text-indigo-600 hover:text-indigo-500"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
+             
                 <div className="text-sm">
                   <Link
                     href="/signup"

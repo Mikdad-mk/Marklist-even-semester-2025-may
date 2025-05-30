@@ -1,5 +1,14 @@
 import mongoose from 'mongoose';
 
+export interface IStudent {
+  name: string;
+  admissionNumber: string;
+  class: string;
+  academicYear: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const studentSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -41,4 +50,5 @@ studentSchema.pre('save', function(next) {
   next();
 });
 
-export default mongoose.models.Student || mongoose.model('Student', studentSchema); 
+const Student = mongoose.models.Student || mongoose.model<IStudent>('Student', studentSchema);
+export default Student; 

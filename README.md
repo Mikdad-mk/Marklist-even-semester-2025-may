@@ -120,3 +120,5 @@ Thanks to Tailwind CSS
 Thanks to [Islamic Da'wa Academy] for the inspiration.
 
 Built with ❤️ for education, accessibility, and excellence.
+
+AIzaSyB840HmCQ4PeMg_SFlmFs59E-sc4pICZfM

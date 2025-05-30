@@ -1,9 +1,20 @@
 import mongoose from 'mongoose';
 
+export interface IMark {
+  studentId: mongoose.Types.ObjectId;
+  subject: string;
+  ce: number;
+  te: number;
+  total: number;
+  result: 'Pass' | 'Fail';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const markSchema = new mongoose.Schema({
   studentId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Student',
     required: true,
   },
   subject: {
@@ -46,6 +57,5 @@ const markSchema = new mongoose.Schema({
 // Create a compound index for studentId and subject to ensure uniqueness
 markSchema.index({ studentId: 1, subject: 1 }, { unique: true });
 
-const Mark = mongoose.models.Mark || mongoose.model('Mark', markSchema);
-
+const Mark = mongoose.models.Mark || mongoose.model<IMark>('Mark', markSchema);
 export default Mark; 
