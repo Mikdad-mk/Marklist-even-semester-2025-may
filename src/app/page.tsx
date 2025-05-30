@@ -72,7 +72,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-50 via-indigo-50 to-emerald-50 relative">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-50 via-indigo-50 to-emerald-50">
       <Style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(20px); }
@@ -107,7 +107,7 @@ export default function HomePage() {
         .animate-fade-in-delay-3 { animation: fadeIn 0.6s ease-out 0.3s forwards; opacity: 0; }
       `}</Style>
 
-      <div className="h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-50 via-indigo-50 to-emerald-50 relative">
+      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-50 via-indigo-50 to-emerald-50 relative">
         {/* Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Top Left Elements */}
@@ -149,7 +149,7 @@ export default function HomePage() {
         </div>
 
         {/* Main Content */}
-        <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 py-4 relative z-10">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 py-4">
           {/* Hero Section */}
           <header className="text-center mb-4 animate-fade-in">
             <div className="inline-block p-2 bg-white/30 backdrop-blur-lg rounded-full mb-3 animate-float">
@@ -184,10 +184,10 @@ export default function HomePage() {
             </div>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 h-[calc(100vh-280px)] overflow-y-auto lg:overflow-y-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* Main Result Card */}
-            <Card className="col-span-1 lg:col-span-3 bg-white/90 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 animate-fade-in-delay-1 animate-glow overflow-hidden h-full">
-              <CardHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm py-3 border-b border-slate-100">
+            <Card className="col-span-1 lg:col-span-3 bg-white/90 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 animate-fade-in-delay-1 animate-glow">
+              <CardHeader className="sticky top-0 z-20 bg-white/90 backdrop-blur-sm py-3 border-b border-slate-100">
                 <CardTitle className="text-lg sm:text-xl text-slate-800 flex items-center gap-2">
                   <Search className="w-5 h-5 text-indigo-500" />
                   Student Result Portal
@@ -196,31 +196,33 @@ export default function HomePage() {
                   Enter your admission number to check results
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 p-2 sm:p-4 h-[calc(100%-4rem)] overflow-auto">
-                <div className="flex flex-col sm:flex-row gap-3 sticky top-0 z-10 bg-white/90 backdrop-blur-sm p-2 rounded-lg">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                    <Input
-                      placeholder="Enter your admission number"
-                      className="pl-10 border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 transition-all duration-300 w-full"
-                      value={admissionNumber}
-                      onChange={(e) => setAdmissionNumber(e.target.value)}
-                    />
+              <CardContent className="space-y-4 p-2 sm:p-4">
+                <div className="sticky top-[72px] z-10 bg-white/90 backdrop-blur-sm p-2 rounded-lg">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                      <Input
+                        placeholder="Enter your admission number"
+                        className="pl-10 border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 transition-all duration-300 w-full"
+                        value={admissionNumber}
+                        onChange={(e) => setAdmissionNumber(e.target.value)}
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleSearch}
+                      disabled={loading}
+                      className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <span className="whitespace-nowrap">Searching...</span>
+                        </>
+                      ) : (
+                        <span className="whitespace-nowrap">Search Results</span>
+                      )}
+                    </Button>
                   </div>
-                  <Button 
-                    onClick={handleSearch}
-                    disabled={loading}
-                    className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        <span className="whitespace-nowrap">Searching...</span>
-                      </>
-                    ) : (
-                      <span className="whitespace-nowrap">Search Results</span>
-                    )}
-                  </Button>
                 </div>
 
                 {markEntry && (
@@ -236,56 +238,58 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    <div className="overflow-x-auto -mx-2 sm:mx-0">
+                    <div className="-mx-2 sm:mx-0">
                       <div className="inline-block min-w-full align-middle">
                         <div className="overflow-hidden border border-slate-100 rounded-lg shadow-sm">
-                          <table className="min-w-full divide-y divide-slate-100">
-                            <thead className="bg-gradient-to-r from-slate-50 to-indigo-50">
-                              <tr>
-                                <th scope="col" className="py-3 pl-4 pr-3 text-left text-xs font-semibold text-slate-900 sm:pl-6">Subject</th>
-                                <th scope="col" className="px-3 py-3 text-center text-xs font-semibold text-slate-900">CE (30)</th>
-                                <th scope="col" className="px-3 py-3 text-center text-xs font-semibold text-slate-900">TE (70)</th>
-                                <th scope="col" className="px-3 py-3 text-center text-xs font-semibold text-slate-900">Total</th>
-                                <th scope="col" className="px-3 py-3 text-center text-xs font-semibold text-slate-900">Result</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 bg-white">
-                              {markEntry.subjects.map((subject, index) => {
-                                const total = subject.ce + subject.te;
-                                const result = subject.ce >= 15 && subject.te >= 28 ? 'Pass' : 'Fail';
-                                return (
-                                  <tr key={index} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="whitespace-nowrap py-3 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">{subject.name}</td>
-                                    <td className="whitespace-nowrap px-3 py-3 text-center text-sm">
-                                      <span className={subject.ce >= 15 ? 'text-emerald-600' : 'text-red-600'}>
-                                        {subject.ce}
-                                      </span>
-                                    </td>
-                                    <td className="whitespace-nowrap px-3 py-3 text-center text-sm">
-                                      <span className={subject.te >= 28 ? 'text-emerald-600' : 'text-red-600'}>
-                                        {subject.te}
-                                      </span>
-                                    </td>
-                                    <td className="whitespace-nowrap px-3 py-3 text-center text-sm font-semibold">{total}</td>
-                                    <td className="whitespace-nowrap px-3 py-3 text-center">
-                                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                        result === 'Pass' 
-                                          ? 'bg-emerald-100 text-emerald-800' 
-                                          : 'bg-red-100 text-red-800'
-                                      }`}>
-                                        {result}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-slate-100">
+                              <thead className="bg-gradient-to-r from-slate-50 to-indigo-50">
+                                <tr>
+                                  <th scope="col" className="py-3 pl-4 pr-3 text-left text-xs font-semibold text-slate-900 sm:pl-6">Subject</th>
+                                  <th scope="col" className="px-3 py-3 text-center text-xs font-semibold text-slate-900">CE (30)</th>
+                                  <th scope="col" className="px-3 py-3 text-center text-xs font-semibold text-slate-900">TE (70)</th>
+                                  <th scope="col" className="px-3 py-3 text-center text-xs font-semibold text-slate-900">Total</th>
+                                  <th scope="col" className="px-3 py-3 text-center text-xs font-semibold text-slate-900">Result</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 bg-white">
+                                {markEntry.subjects.map((subject, index) => {
+                                  const total = subject.ce + subject.te;
+                                  const result = subject.ce >= 15 && subject.te >= 28 ? 'Pass' : 'Fail';
+                                  return (
+                                    <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                                      <td className="whitespace-nowrap py-3 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">{subject.name}</td>
+                                      <td className="whitespace-nowrap px-3 py-3 text-center text-sm">
+                                        <span className={subject.ce >= 15 ? 'text-emerald-600' : 'text-red-600'}>
+                                          {subject.ce}
+                                        </span>
+                                      </td>
+                                      <td className="whitespace-nowrap px-3 py-3 text-center text-sm">
+                                        <span className={subject.te >= 28 ? 'text-emerald-600' : 'text-red-600'}>
+                                          {subject.te}
+                                        </span>
+                                      </td>
+                                      <td className="whitespace-nowrap px-3 py-3 text-center text-sm font-semibold">{total}</td>
+                                      <td className="whitespace-nowrap px-3 py-3 text-center">
+                                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                          result === 'Pass' 
+                                            ? 'bg-emerald-100 text-emerald-800' 
+                                            : 'bg-red-100 text-red-800'
+                                        }`}>
+                                          {result}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex justify-end px-2 sm:px-0">
+                    <div className="flex justify-end px-2 sm:px-0 pb-4">
                       <Button
                         onClick={handleViewFullResult}
                         className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
@@ -299,7 +303,7 @@ export default function HomePage() {
             </Card>
 
             {/* Sidebar Cards */}
-            <div className="space-y-4 h-full">
+            <div className="space-y-4">
               {!user ? (
                 <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 h-auto lg:h-[calc(50%-0.5rem)]">
                   <CardHeader className="py-4 border-b border-slate-100">
