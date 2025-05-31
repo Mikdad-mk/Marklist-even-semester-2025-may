@@ -76,11 +76,11 @@ export default function MarksEntry() {
       return;
     }
 
-    if (user.status === 'inactive') {
+    if (user.status === 'inactive' || !user.canEnterMarks) {
       router.push('/teacher/dashboard');
       toast({
-        title: "Account Restricted",
-        description: "Your account has been disabled by an administrator. You cannot enter marks at this time.",
+        title: "Access Restricted",
+        description: "You do not have permission to enter marks. Please contact an administrator.",
         variant: "destructive"
       });
       return;
@@ -88,7 +88,7 @@ export default function MarksEntry() {
   }, [user, router]);
 
   useEffect(() => {
-    if (selectedClass) {
+    if (selectedClass && !submitting) {
       fetchStudents(selectedClass);
     }
   }, [selectedClass]);
@@ -97,16 +97,22 @@ export default function MarksEntry() {
     try {
       setLoading(true);
       const response = await fetch(`/api/teacher/students?class=${className}`);
-      if (!response.ok) throw new Error('Failed to fetch students');
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to fetch students');
+      }
+      
       const data = await response.json();
       setStudents(data);
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Failed to load students",
+        description: error instanceof Error ? error.message : "Failed to load students",
         variant: "destructive"
       });
+      setStudents([]); // Clear students on error
     } finally {
       setLoading(false);
     }
@@ -114,6 +120,9 @@ export default function MarksEntry() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (submitting) return;
+    
     setSubmitting(true);
 
     try {
@@ -134,6 +143,16 @@ export default function MarksEntry() {
         toast({
           title: "Error",
           description: "TE marks must be between 0 and 70",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate other required fields
+      if (!studentName.trim() || !admissionNumber.trim() || !selectedClass || !subject.trim()) {
+        toast({
+          title: "Error",
+          description: "All fields are required",
           variant: "destructive"
         });
         return;

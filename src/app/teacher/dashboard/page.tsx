@@ -10,7 +10,8 @@ import {
   ChartBar,
   Loader2,
   BookOpen,
-  AlertCircle
+  AlertCircle,
+  Clock
 } from 'lucide-react';
 import {
   Card,
@@ -25,6 +26,15 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 
 // Dynamically import ApexCharts with no SSR
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
@@ -32,15 +42,30 @@ const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 interface DashboardStats {
   totalMarks: number;
   successRate: number;
+  canEnterMarks: boolean;
+  recentMarks: Array<{
+    studentName: string;
+    studentClass: string;
+    subject: string;
+    ce: number;
+    te: number;
+    total: number;
+    result: string;
+    createdAt: string;
+  }>;
   topPerformers: Array<{
-    _id: string;
-    name: string;
-    admissionNumber: string;
-    class: string;
-    averageScore: number;
+    subject: string;
+    students: Array<{
+      _id: string;
+      name: string;
+      admissionNumber: string;
+      class: string;
+      averageScore: number;
+    }>;
   }>;
   classPerformance: Array<{
     class: string;
+    subject: string;
     averageScore: number;
     passPercentage: number;
     studentCount: number;
@@ -51,7 +76,8 @@ interface DashboardStats {
 export default function TeacherDashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const { user } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const { user, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -75,12 +101,11 @@ export default function TeacherDashboard() {
       return;
     }
 
+    // Don't redirect if inactive, just show the error state
     if (user.status === 'inactive') {
-      toast({
-        title: "Account Restricted",
-        description: "Your account has been disabled by an administrator. Please contact support for assistance.",
-        variant: "destructive"
-      });
+      setError("Your account has been disabled. Please contact an administrator.");
+      setLoading(false);
+      return;
     }
 
     fetchDashboardStats();
@@ -89,16 +114,22 @@ export default function TeacherDashboard() {
   const fetchDashboardStats = async () => {
     try {
       const response = await fetch('/api/teacher/dashboard');
-      if (!response.ok) throw new Error('Failed to fetch dashboard stats');
       const data = await response.json();
+      
+      if (!response.ok) {
+        if (response.status === 403) {
+          // Set error state instead of redirecting
+          setError(data.error || "Your account has been disabled. Please contact an administrator.");
+          return;
+        }
+        throw new Error(data.error || 'Failed to fetch dashboard stats');
+      }
+      
+      setError(null);
       setStats(data);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch dashboard statistics",
-        variant: "destructive"
-      });
+      setError(error instanceof Error ? error.message : "Failed to fetch dashboard statistics");
     } finally {
       setLoading(false);
     }
@@ -119,17 +150,41 @@ export default function TeacherDashboard() {
     return null;
   }
 
+  // Show error state with logout option if account is disabled
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Account Restricted</AlertTitle>
+          <AlertDescription className="mt-2">
+            {error}
+          </AlertDescription>
+        </Alert>
+        <Button
+          variant="outline"
+          onClick={() => {
+            logout();
+            router.push('/login');
+          }}
+        >
+          Logout
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Teacher Dashboard</h1>
 
-      {user.status === 'inactive' && (
-        <Alert variant="destructive" className="mb-6">
+      {/* Show mark entry status */}
+      {stats && !stats.canEnterMarks && (
+        <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Account Restricted</AlertTitle>
+          <AlertTitle>Mark Entry Disabled</AlertTitle>
           <AlertDescription>
-            Your account has been disabled by an administrator. You cannot enter marks or access certain features.
-            Please contact support for assistance.
+            Your mark entry permission has been disabled by an administrator. You can still view your previously entered marks.
           </AlertDescription>
         </Alert>
       )}
@@ -170,18 +225,67 @@ export default function TeacherDashboard() {
         </Card>
       </div>
 
+      {/* Recent Marks */}
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-indigo-500" />
+            <CardTitle>Recent Marks Entered</CardTitle>
+          </div>
+          <CardDescription>Your latest mark entries</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Class</TableHead>
+                  <TableHead>Subject</TableHead>
+                  <TableHead>CE</TableHead>
+                  <TableHead>TE</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Result</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stats?.recentMarks.map((mark, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{mark.studentName}</TableCell>
+                    <TableCell>{mark.studentClass}</TableCell>
+                    <TableCell>{mark.subject}</TableCell>
+                    <TableCell>{mark.ce}</TableCell>
+                    <TableCell>{mark.te}</TableCell>
+                    <TableCell>{mark.total}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        mark.result === 'Pass' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {mark.result}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Class Performance Chart */}
       <Card className="mb-8">
         <CardHeader>
           <div className="flex items-center gap-2">
             <ChartBar className="w-5 h-5 text-indigo-500" />
-            <CardTitle>Your Class Performance Overview</CardTitle>
+            <CardTitle>Class Performance Overview</CardTitle>
           </div>
-          <CardDescription>Average scores and pass rates by class</CardDescription>
+          <CardDescription>Average scores and pass rates by class and subject</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[400px] w-full">
-            {stats?.classPerformance && (
+            {stats?.classPerformance && stats.classPerformance.length > 0 && (
               <Chart
                 type="area"
                 height={400}
@@ -201,90 +305,22 @@ export default function TeacherDashboard() {
                   chart: {
                     stacked: false,
                     toolbar: {
-                      show: true,
-                      tools: {
-                        download: true,
-                        selection: false,
-                        zoom: false,
-                        zoomin: false,
-                        zoomout: false,
-                        pan: false,
-                      }
-                    },
-                    animations: {
-                      enabled: true,
-                      speed: 800,
-                      animateGradually: {
-                        enabled: true,
-                        delay: 150
-                      },
-                      dynamicAnimation: {
-                        enabled: true,
-                        speed: 350
-                      }
-                    }
-                  },
-                  colors: ['#6366f1', '#22c55e'],
-                  plotOptions: {
-                    bar: {
-                      borderRadius: 8,
-                      columnWidth: '50%',
-                      dataLabels: {
-                        position: 'top'
-                      }
-                    }
-                  },
-                  dataLabels: {
-                    enabled: true,
-                    formatter: function (val: number) {
-                      return val.toFixed(1)
-                    },
-                    offsetY: -20,
-                    style: {
-                      fontSize: '12px',
-                      colors: ["#304758"]
-                    }
-                  },
-                  stroke: {
-                    width: [0, 4],
-                    curve: 'smooth'
-                  },
-                  grid: {
-                    borderColor: '#f1f1f1',
-                    padding: {
-                      top: 0,
-                      right: 0,
-                      bottom: 0,
-                      left: 0
-                    }
-                  },
-                  markers: {
-                    size: 6,
-                    colors: ['#22c55e'],
-                    strokeColors: '#fff',
-                    strokeWidth: 2,
-                    hover: {
-                      size: 8
+                      show: false
                     }
                   },
                   xaxis: {
-                    categories: stats.classPerformance.map(item => item.class),
-                    title: {
-                      text: 'Classes',
+                    categories: stats.classPerformance.map(item => `${item.class} - ${item.subject}`),
+                    labels: {
+                      rotate: -45,
                       style: {
-                        fontSize: '12px',
-                        fontWeight: 600
+                        fontSize: '12px'
                       }
                     }
                   },
                   yaxis: [
                     {
                       title: {
-                        text: "Average Score",
-                        style: {
-                          fontSize: '12px',
-                          fontWeight: 600
-                        }
+                        text: 'Average Score'
                       },
                       min: 0,
                       max: 100
@@ -292,36 +328,23 @@ export default function TeacherDashboard() {
                     {
                       opposite: true,
                       title: {
-                        text: "Pass Rate (%)",
-                        style: {
-                          fontSize: '12px',
-                          fontWeight: 600
-                        }
+                        text: 'Pass Rate (%)'
                       },
                       min: 0,
                       max: 100
                     }
                   ],
-                  tooltip: {
-                    shared: true,
-                    intersect: false,
-                    theme: 'light',
-                    y: [{
-                      formatter: function(y: number) {
-                        return y.toFixed(1) + "%";
-                      }
-                    }, {
-                      formatter: function(y: number) {
-                        return y.toFixed(1) + "%";
-                      }
-                    }]
+                  colors: ['#6366f1', '#10b981'],
+                  stroke: {
+                    width: [0, 3]
                   },
-                  legend: {
-                    position: 'top',
-                    horizontalAlign: 'right',
-                    floating: true,
-                    offsetY: -25,
-                    offsetX: -5
+                  plotOptions: {
+                    bar: {
+                      borderRadius: 3
+                    }
+                  },
+                  markers: {
+                    size: 4
                   }
                 }}
               />
@@ -331,56 +354,47 @@ export default function TeacherDashboard() {
       </Card>
 
       {/* Top Performers */}
-      <Card className="mb-8">
+      <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-500" />
-            <CardTitle>Top Performing Students</CardTitle>
+            <Trophy className="w-5 h-5 text-indigo-500" />
+            <CardTitle>Top Performers</CardTitle>
           </div>
-          <CardDescription>Students with highest average scores in your marks</CardDescription>
+          <CardDescription>Best performing students by subject</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admission No</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Average Score</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {stats?.topPerformers.map((student, index) => (
-                  <tr key={student._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${
-                          index === 0 ? 'bg-yellow-100 text-yellow-800' :
-                          index === 1 ? 'bg-gray-100 text-gray-800' :
-                          index === 2 ? 'bg-orange-100 text-orange-800' :
-                          'bg-slate-50 text-slate-600'
-                        } text-sm font-semibold`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {stats?.topPerformers.map((subject) => (
+              <Card key={subject.subject}>
+                <CardHeader>
+                  <CardTitle className="text-lg">{subject.subject}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {subject.students.map((student, index) => (
+                      <div key={student._id} className="flex items-center gap-4">
+                        <div className="flex-none w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold">
                           {index + 1}
-                        </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {student.name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {student.class} - {student.admissionNumber}
+                          </p>
+                        </div>
+                        <div className="flex-none">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                            {student.averageScore}%
+                          </span>
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.admissionNumber}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.class}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-emerald-600">{student.averageScore}%</td>
-                  </tr>
-                ))}
-                {(!stats?.topPerformers || stats.topPerformers.length === 0) && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                      No data available
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </CardContent>
       </Card>

@@ -9,10 +9,10 @@ declare global {
   var mongoose: GlobalMongoose | undefined;
 }
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/result";
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env');
+  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
 }
 
 let cached = global.mongoose || { conn: null, promise: null };
@@ -31,13 +31,12 @@ async function connectDB(): Promise<typeof mongoose> {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts);
+    cached.promise = mongoose.connect(MONGODB_URI, opts);
   }
 
   try {
-    const conn = await cached.promise;
-    cached.conn = conn;
-    return conn;
+    cached.conn = await cached.promise;
+    return cached.conn;
   } catch (e) {
     cached.promise = null;
     throw e;

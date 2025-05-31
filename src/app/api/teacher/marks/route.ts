@@ -20,20 +20,24 @@ async function isTeacherWithMarkAccess(req: NextRequest) {
     const decoded = verify(token, JWT_SECRET) as {
       id: string;
       role: string;
-      isApproved: boolean;
     };
 
-    if (decoded.role !== 'teacher' || !decoded.isApproved) {
+    if (decoded.role !== 'teacher') {
       return false;
     }
 
-    // Check if teacher account is active
+    await dbConnect();
+    
+    // Check if teacher is approved, active, and has mark entry permission
     const teacher = await User.findById(decoded.id);
-    if (!teacher || teacher.status === 'inactive') {
+    if (!teacher || !teacher.isApproved || teacher.status !== 'active' || !teacher.canEnterMarks) {
       return false;
     }
 
-    return decoded;
+    return {
+      ...decoded,
+      isApproved: teacher.isApproved
+    };
   } catch {
     return false;
   }

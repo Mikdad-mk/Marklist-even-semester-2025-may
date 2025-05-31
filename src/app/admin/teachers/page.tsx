@@ -293,18 +293,22 @@ export default function TeachersPage() {
         method: 'DELETE',
       });
       
-      if (!response.ok) throw new Error('Failed to delete pre-registered teacher');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete pre-registered teacher');
+      }
       
       fetchPreRegisteredTeachers();
       toast({
         title: "Success",
-        description: "Pre-registered teacher deleted successfully",
+        description: data.message || "Pre-registered teacher deleted successfully",
       });
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Failed to delete pre-registered teacher",
+        description: error instanceof Error ? error.message : "Failed to delete pre-registered teacher",
         variant: "destructive",
       });
     }

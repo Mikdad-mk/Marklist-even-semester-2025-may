@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
+import dbConnect from '@/lib/dbConnect';
 import mongoose from 'mongoose';
 import { verify } from "jsonwebtoken";
 import PreRegisteredTeacher from '@/models/PreRegisteredTeacher';
@@ -31,10 +31,15 @@ export async function DELETE(
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    await connectDB();
+    await dbConnect();
 
     // Get the ID from context params
     const teacherId = context.params.id;
+
+    // Validate the teacher ID
+    if (!mongoose.Types.ObjectId.isValid(teacherId)) {
+      return new NextResponse('Invalid teacher ID format', { status: 400 });
+    }
 
     // Delete the pre-registered teacher using the model
     const result = await PreRegisteredTeacher.findByIdAndDelete(teacherId);
@@ -43,12 +48,12 @@ export async function DELETE(
       return new NextResponse('Pre-registered teacher not found', { status: 404 });
     }
 
-    return new NextResponse('Pre-registered teacher deleted successfully', { status: 200 });
+    return NextResponse.json({ message: 'Pre-registered teacher deleted successfully' });
   } catch (error) {
     if (error instanceof Error && error.name === 'JsonWebTokenError') {
       return new NextResponse('Invalid token', { status: 401 });
     }
     console.error('Error deleting pre-registered teacher:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 } 

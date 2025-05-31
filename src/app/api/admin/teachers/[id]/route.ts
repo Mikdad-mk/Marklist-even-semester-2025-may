@@ -24,9 +24,12 @@ async function isAdmin(req: NextRequest) {
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // First await the params
+    const { id } = await context.params;
+
     if (!await isAdmin(req)) {
       return NextResponse.json(
         { error: "Not authorized" },
@@ -46,15 +49,15 @@ export async function PATCH(
       );
     }
 
-    // Validate ID format
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    // Validate ID format using the extracted id
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid teacher ID format" },
         { status: 400 }
       );
     }
 
-    const teacher = await User.findById(params.id).exec();
+    const teacher = await User.findById(id).exec();
     
     if (!teacher) {
       return NextResponse.json(

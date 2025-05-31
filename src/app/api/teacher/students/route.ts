@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verify } from "jsonwebtoken";
 import dbConnect from "@/lib/dbConnect";
 import Student from '@/models/Student';
+import User from '@/models/User';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -14,9 +15,21 @@ async function isApprovedTeacher(req: NextRequest) {
     const decoded = verify(token, JWT_SECRET) as {
       id: string;
       role: string;
-      isApproved: boolean;
     };
-    return decoded.role === 'teacher' && decoded.isApproved;
+
+    if (decoded.role !== 'teacher') {
+      return false;
+    }
+
+    // Check if teacher is approved and active
+    await dbConnect();
+    const teacher = await User.findById(decoded.id);
+    
+    if (!teacher || !teacher.isApproved || teacher.status !== 'active' || !teacher.canEnterMarks) {
+      return false;
+    }
+
+    return true;
   } catch {
     return false;
   }

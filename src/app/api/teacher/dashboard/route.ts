@@ -4,6 +4,7 @@ import dbConnect from '@/lib/dbConnect';
 import Student from '@/models/Student';
 import Mark from '@/models/Mark';
 import mongoose from 'mongoose';
+import User from '@/models/User';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -15,14 +16,25 @@ async function getTeacherFromToken(req: NextRequest) {
     const decoded = verify(token, JWT_SECRET) as {
       id: string;
       role: string;
-      isApproved: boolean;
     };
 
-    if (decoded.role !== 'teacher' || !decoded.isApproved) {
+    if (decoded.role !== 'teacher') {
       return null;
     }
 
-    return decoded;
+    // Get the full teacher document to check approval and status
+    await dbConnect();
+    const teacher = await User.findById(decoded.id);
+    
+    if (!teacher || !teacher.isApproved || teacher.status !== 'active') {
+      return null;
+    }
+
+    // Return teacher info including mark entry permission
+    return {
+      ...decoded,
+      canEnterMarks: teacher.canEnterMarks
+    };
   } catch {
     return null;
   }
@@ -54,6 +66,44 @@ export async function GET(req: NextRequest) {
       ? Math.round((passingMarksCount / totalMarksCount) * 100) 
       : 0;
 
+    // Get recent marks entered by this teacher
+    const recentMarks = await Mark.aggregate([
+      {
+        $match: {
+          teacherId: new mongoose.Types.ObjectId(teacher.id)
+        }
+      },
+      {
+        $lookup: {
+          from: 'students',
+          localField: 'studentId',
+          foreignField: '_id',
+          as: 'student'
+        }
+      },
+      {
+        $unwind: '$student'
+      },
+      {
+        $sort: { createdAt: -1 }
+      },
+      {
+        $limit: 10
+      },
+      {
+        $project: {
+          studentName: '$student.name',
+          studentClass: '$student.class',
+          subject: 1,
+          ce: 1,
+          te: 1,
+          total: 1,
+          result: 1,
+          createdAt: 1
+        }
+      }
+    ]);
+
     // Get class-wise performance for this teacher's marks
     const classPerformance = await Mark.aggregate([
       {
@@ -74,21 +124,25 @@ export async function GET(req: NextRequest) {
       },
       {
         $group: {
-          _id: '$student.class',
+          _id: {
+            class: '$student.class',
+            subject: '$subject'
+          },
           totalMarks: { $sum: 1 },
-          totalScore: { $sum: { $add: ['$ce', '$te'] } },
+          totalScore: { $sum: '$total' },
           passingCount: {
             $sum: {
               $cond: [{ $eq: ['$result', 'Pass'] }, 1, 0]
             }
           },
-          averageScore: { $avg: { $add: ['$ce', '$te'] } },
+          averageScore: { $avg: '$total' },
           studentCount: { $addToSet: '$studentId' }
         }
       },
       {
         $project: {
-          class: '$_id',
+          class: '$_id.class',
+          subject: '$_id.subject',
           totalMarks: 1,
           averageScore: { $round: ['$averageScore', 2] },
           passPercentage: {
@@ -106,7 +160,10 @@ export async function GET(req: NextRequest) {
         }
       },
       {
-        $sort: { class: 1 }
+        $sort: { 
+          class: 1,
+          subject: 1
+        }
       }
     ]);
 
@@ -118,9 +175,26 @@ export async function GET(req: NextRequest) {
         }
       },
       {
+        $lookup: {
+          from: 'students',
+          localField: 'studentId',
+          foreignField: '_id',
+          as: 'student'
+        }
+      },
+      {
+        $unwind: '$student'
+      },
+      {
         $group: {
-          _id: '$studentId',
-          averageScore: { $avg: { $add: ['$ce', '$te'] } },
+          _id: {
+            studentId: '$studentId',
+            subject: '$subject'
+          },
+          studentName: { $first: '$student.name' },
+          studentClass: { $first: '$student.class' },
+          admissionNumber: { $first: '$student.admissionNumber' },
+          averageScore: { $avg: '$total' },
           totalMarks: { $sum: 1 }
         }
       },
@@ -130,41 +204,40 @@ export async function GET(req: NextRequest) {
         }
       },
       {
-        $limit: 10
-      },
-      {
-        $lookup: {
-          from: 'students',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'studentDetails'
-        }
-      },
-      {
-        $unwind: {
-          path: '$studentDetails',
-          preserveNullAndEmptyArrays: false
+        $group: {
+          _id: '$_id.subject',
+          subject: { $first: '$_id.subject' },
+          students: {
+            $push: {
+              _id: '$_id.studentId',
+              name: '$studentName',
+              class: '$studentClass',
+              admissionNumber: '$admissionNumber',
+              averageScore: { $round: ['$averageScore', 2] }
+            }
+          }
         }
       },
       {
         $project: {
-          _id: '$studentDetails._id',
-          name: '$studentDetails.name',
-          admissionNumber: '$studentDetails.admissionNumber',
-          class: '$studentDetails.class',
-          averageScore: { $round: ['$averageScore', 2] }
+          subject: 1,
+          students: { $slice: ['$students', 5] }
         }
       },
       {
-        $limit: 5
+        $sort: {
+          subject: 1
+        }
       }
     ]);
 
     return NextResponse.json({
       totalMarks: totalMarksCount,
       successRate,
+      recentMarks,
       topPerformers,
-      classPerformance
+      classPerformance,
+      canEnterMarks: teacher.canEnterMarks
     });
   } catch (error) {
     console.error('Teacher dashboard stats error:', error);
